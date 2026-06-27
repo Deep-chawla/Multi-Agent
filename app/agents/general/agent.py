@@ -1,27 +1,9 @@
 from langchain_core.messages import HumanMessage
 from app.providers.llm import GroqProvider
+from app.agents.base_agent import BaseAgent
 
-class GeneralAgent:
-    def __init__(self,memory):
-        self.llm = GroqProvider()
-        self.memory = memory
+class GeneralAgent(BaseAgent):
+    def __init__(self, llm, memory):
+        super().__init__(llm, memory)
 
-    def invoke(self, question: str):
-        response = self.llm.invoke(
-            [
-                HumanMessage(content=question)
-            ]
-        )
-        return response.content
-
-    def stream(self, question: str):
-        self.memory.add_user_message(question)
-
-        response = ""
-
-        for chunk in self.llm.stream(self.memory.get_messages()):
-            if chunk.content:
-                response += chunk.content
-                yield chunk.content
-
-        self.memory.add_ai_message(response)
+   
