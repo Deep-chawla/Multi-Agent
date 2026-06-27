@@ -1,5 +1,5 @@
 from abc import ABC
-
+from langchain_core.messages import SystemMessage
 from app.providers.llm import GroqProvider
 
 
@@ -14,9 +14,10 @@ class BaseAgent(ABC):
     - Normal invoke responses
     """
 
-    def __init__(self, llm, memory):
+    def __init__(self,llm,memory,system_prompt):
         self.llm = llm
         self.memory = memory
+        self.system_prompt = system_prompt
 
     def invoke(self, question: str):
         self.memory.add_user_message(question)
@@ -27,7 +28,11 @@ class BaseAgent(ABC):
 
     def stream(self, question: str):
         self.memory.add_user_message(question)
-        messages = self.memory.get_messages()
+
+        messages = [
+            SystemMessage(content=self.system_prompt),
+            *self.memory.get_messages()
+        ]
         full_response = ""
         for chunk in self.llm.stream(messages):
             if chunk.content:

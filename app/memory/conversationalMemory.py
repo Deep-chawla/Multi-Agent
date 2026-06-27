@@ -1,4 +1,4 @@
-from langchain_core.messages import (SystemMessage,HumanMessage,AIMessage,BaseMessage)
+from langchain_core.messages import (HumanMessage,AIMessage,BaseMessage)
 
 
 class ChatMemory:
@@ -6,9 +6,8 @@ class ChatMemory:
     Manages conversation history for the current chat session.
     """
 
-    def __init__(self, system_prompt: str, max_messages: int = 20):
-        self.system_prompt = SystemMessage(content=system_prompt)
-        self.history = [self.system_prompt]
+    def __init__(self, max_messages: int = 20):
+        self.history = []
         self.max_messages = max_messages
 
     def add_user_message(self, content: str):

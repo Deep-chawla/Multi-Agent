@@ -1,7 +1,8 @@
 from bootstrap.server import start_application
 
+
 def main():
-    agent = start_application()
+    app = start_application()
 
     print("=" * 50)
     print("Multi Agent Platform")
@@ -14,10 +15,19 @@ def main():
         if question.lower() == "exit":
             break
 
+        # Ask supervisor which agent should handle the request
+        route = app.super_visor.route(question)
+
+        if route == "coding":
+            agent = app.coding_agent
+        else:
+            agent = app.general_agent
+
         print("AI : ", end="", flush=True)
 
-        for token in agent.general_agent.stream(question):
+        for token in agent.stream(question):
             print(token, end="", flush=True)
+
         print()
 
 
