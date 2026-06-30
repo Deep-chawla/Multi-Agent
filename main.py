@@ -1,8 +1,16 @@
 from bootstrap.server import start_application
+from langchain_core.messages import HumanMessage
 
 
 def main():
+
     app = start_application()
+
+    config = {
+        "configurable": {
+            "thread_id": "user-1"
+        }
+    }
 
     print("=" * 50)
     print("Multi Agent Platform")
@@ -10,23 +18,30 @@ def main():
     print("=" * 50)
 
     while True:
+
         question = input("\nYou : ")
 
         if question.lower() == "exit":
             break
 
-        # Ask supervisor which agent should handle the request
-        route = app.super_visor.route(question)
-
-        if route == "coding":
-            agent = app.coding_agent
-        else:
-            agent = app.general_agent
-
         print("AI : ", end="", flush=True)
 
-        for token in agent.stream(question):
-            print(token, end="", flush=True)
+        for message, metadata in app.workflow.graph.stream(
+            {
+                "messages": [
+                HumanMessage(content=question)
+                ]
+            },
+            config=config,
+            stream_mode="messages",
+        ):
+
+    # Ignore supervisor output
+            if metadata["langgraph_node"] == "supervisor":
+                continue
+
+            if message.content:
+                print(message.content, end="", flush=True)
 
         print()
 

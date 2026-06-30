@@ -1,4 +1,4 @@
-from langchain_core.messages import (HumanMessage,AIMessage,BaseMessage)
+from langchain_core.messages import (SystemMessage,HumanMessage,AIMessage,BaseMessage)
 
 
 class ChatMemory:

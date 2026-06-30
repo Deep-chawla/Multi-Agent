@@ -4,7 +4,7 @@ from app.agents.base_agent import BaseAgent
 from app.prompt.general_prompt import GENERAL_PROMPT
 
 class GeneralAgent(BaseAgent):
-    def __init__(self, llm, memory):
-        super().__init__(llm, memory,GENERAL_PROMPT)
+    def __init__(self, llm):
+        super().__init__(llm,GENERAL_PROMPT)
 
    
