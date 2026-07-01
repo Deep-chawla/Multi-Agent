@@ -11,9 +11,7 @@ class GraphNodes:
         Route the user query to the correct agent.
         """
         question = state["messages"][-1].content
-
         route = self.app.supervisor.route(question)
-
         return {
             "next": route
         }
@@ -25,7 +23,6 @@ class GraphNodes:
         response = self.app.general_agent.invoke(
             state["messages"]
         )
-
         return {
             "messages": [response]
         }
@@ -37,7 +34,6 @@ class GraphNodes:
         response = self.app.coding_agent.invoke(
             state["messages"]
         )
-
         return {
             "messages": [response]
         }
