@@ -1,3 +1,4 @@
+
 from app.graph.state import GraphState
 
 
@@ -37,3 +38,15 @@ class GraphNodes:
         return {
             "messages": [response]
         }
+    
+    def research(self, state):
+        """
+        Execute the Research Agent.
+        """
+        response = self.app.research_agent.invoke(
+            state["messages"]
+        )
+
+        return {
+        "messages": [response]
+    }

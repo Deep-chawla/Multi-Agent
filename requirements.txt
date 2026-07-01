@@ -7,3 +7,9 @@ fastapi
 uvicorn
 pydantic
 python-dotenv
+langchain-tavily
+wikipedia
+wikipedia-api
+trafilatura
+requests 
+beautifulsoup4

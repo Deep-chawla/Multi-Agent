@@ -21,6 +21,6 @@ class SupervisorAgent:
 
         route = response.content.strip().lower()
 
-        if route not in {"general", "coding"}:
+        if route not in {"general", "coding", "research"}:
             return "general"
         return route

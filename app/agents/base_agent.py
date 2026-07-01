@@ -15,7 +15,7 @@ class BaseAgent(ABC):
         self.llm = llm
         self.system_prompt = system_prompt
         self.tools = tools or []
-
+    
         if self.tools:
             self.model = self.llm.client.bind_tools(self.tools)
         else:
@@ -28,11 +28,11 @@ class BaseAgent(ABC):
         ]
 
     def invoke(self, messages: list[BaseMessage]):
-
+    
         final_messages = self._build_messages(messages)
 
         response = self.model.invoke(final_messages)
-
+        
         if not self.tools or not response.tool_calls:
             return response
 

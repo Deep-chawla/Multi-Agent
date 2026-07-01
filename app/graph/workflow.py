@@ -21,6 +21,7 @@ class AgentWorkflow:
         self.builder.add_node("supervisor",self.nodes.supervisor)
         self.builder.add_node("general",self.nodes.general)
         self.builder.add_node("coding",self.nodes.coding)
+        self.builder.add_node("research",self.nodes.research)
 
         # Start -> Supervisor
         self.builder.add_edge(START,"supervisor")
@@ -31,11 +32,13 @@ class AgentWorkflow:
             route,
             {
                 "general": "general",
-                "coding": "coding"
+                "coding": "coding",
+                "research": "research"
             }
         )
 
         # Finish
         self.builder.add_edge("general",END)
+        self.builder.add_edge("research",END)
 
         self.builder.add_edge("coding",END)
