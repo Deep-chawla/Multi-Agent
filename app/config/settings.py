@@ -10,7 +10,7 @@ class Settings:
     # MODEL_NAME = "llama-3.3-70b-versatile"
     MODEL_NAME = "openai/gpt-oss-120b"
     TEMPERATURE = 0
-    MAX_TOKENS = 1024
+    MAX_TOKENS = 512  # from 1024 to 512 to reduce token
 
 
 settings = Settings()

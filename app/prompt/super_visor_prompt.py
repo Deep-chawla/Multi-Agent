@@ -20,18 +20,17 @@ Use for:
 
 coding
 Use for:
-- Programming
-- Code generation
-- Code explanation
-- Debugging
-- DSA
-- Algorithms
-- Frameworks
-- APIs
-- Software engineering
-- Running Python code
-- Coding tools
-- Technical implementation
+- Programming and software development
+- Code generation, debugging, and explanation
+- DSA and algorithms
+- Frameworks, APIs, and software engineering
+- Running or testing Python code
+- Working with local files and folders
+- Reading project files
+- Checking whether files or folders exist
+- Listing directory contents
+- Inspecting project structure
+- Any request involving local file paths or developer tools
 
 research
 Use for:
