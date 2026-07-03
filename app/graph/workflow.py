@@ -22,23 +22,27 @@ class AgentWorkflow:
         self.builder.add_node("general",self.nodes.general)
         self.builder.add_node("coding",self.nodes.coding)
         self.builder.add_node("research",self.nodes.research)
+        self.builder.add_node("dispatcher", self.nodes.dispatcher)
+        self.builder.add_node("final_response",self.nodes.final_response)
 
         # Start -> Supervisor
         self.builder.add_edge(START,"supervisor")
+        self.builder.add_edge("supervisor","dispatcher")
 
         # Conditional Routing
         self.builder.add_conditional_edges(
-            "supervisor",
+            "dispatcher",
             route,
             {
                 "general": "general",
                 "coding": "coding",
-                "research": "research"
+                "research": "research",
+                "final_response": "final_response"
             }
         )
 
-        # Finish
-        self.builder.add_edge("general",END)
-        self.builder.add_edge("research",END)
 
-        self.builder.add_edge("coding",END)
+        for node in ["general", "coding", "research"]:
+            self.builder.add_edge(node, "dispatcher")
+
+        self.builder.add_edge("final_response",END)

@@ -1,26 +1,34 @@
-from langchain_core.messages import HumanMessage, SystemMessage
+import json
+
+from langchain_core.messages import HumanMessage, SystemMessage,BaseMessage
 
 from app.prompt.super_visor_prompt import SUPER_VISOR_PROMPT
+from langchain_groq import ChatGroq
+from typing import List
 
 
 class SupervisorAgent:
-    """
-    Routes user requests to the appropriate agent.
-    """
 
     def __init__(self, llm):
         self.llm = llm
 
-    def route(self, question: str) -> str:
+    def route(self, question: List[BaseMessage]):
+
         messages = [
             SystemMessage(content=SUPER_VISOR_PROMPT),
-            HumanMessage(content=question),
+            *question
         ]
 
         response = self.llm.invoke(messages)
 
-        route = response.content.strip().lower()
+        try:
+            plan = json.loads(response.content)
+            return plan
 
-        if route not in {"general", "coding", "research"}:
-            return "general"
-        return route
+        except Exception:
+            return {
+                "plan": ["general"]
+            }
+        
+# r = SupervisorAgent(llm=None)
+# print(r.route("research about LangChain and write simple program with fastapi"))

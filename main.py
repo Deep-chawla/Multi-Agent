@@ -37,7 +37,7 @@ def main():
         ):
 
     # Ignore supervisor output
-            if metadata["langgraph_node"] == "supervisor":
+            if metadata["langgraph_node"] != "final_response":
                 continue
 
             if message.content:
