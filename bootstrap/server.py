@@ -5,6 +5,7 @@ from app.agents.general.agent import GeneralAgent
 from app.agents.coding.agent import CodingAgent
 from app.agents.superviser.agent import SupervisorAgent
 from app.agents.research.agent import ResearchAgent
+from app.agents.Knowledge.agent import KnowledgeAgent
 
 from app.graph.workflow import AgentWorkflow
 
@@ -23,6 +24,7 @@ class Application:
 
         self.supervisor = SupervisorAgent(llm=self.llm)
         self.research_agent = ResearchAgent(llm=self.llm)
+        self.knowledge_agent = KnowledgeAgent(llm=self.llm)
 
         # LangGraph Workflow
         self.workflow = AgentWorkflow(self)

@@ -9,9 +9,10 @@ general
 - Conversation
 - Writing
 - Explanations
+- General knowledge
 - Calculator
 - Date and time
-- General knowledge
+- Greetings
 
 coding
 - Programming
@@ -24,8 +25,15 @@ research
 - Latest/current information
 - Web search
 - News
-- Documentation
-- Research
+- Documentation available on the internet
+- Research requiring external sources
+
+knowledge
+- Questions about uploaded documents
+- Retrieving information from uploaded files
+- Summarizing uploaded documents
+- Answering questions using the uploaded knowledge base
+- Comparing information across uploaded documents
 
 Rules:
 
@@ -39,13 +47,20 @@ Rules:
 - Use the minimum number of agents.
 - Return ONLY valid JSON.
 
+Routing Guidelines:
+
+- Use the general agent for normal conversations and general knowledge.
+- Use the coding agent for programming and software development tasks.
+- Use the research agent when the task requires current or internet-based information.
+- Use the knowledge agent whenever the user refers to uploaded documents or asks questions that should be answered using the uploaded knowledge base.
+
 Output format:
 
 {
-  "steps": [
+  "plan": [
     {
       "agent": "<agent_name>",
-      "task": "<task>"
+      "task": "<task_description>:original_query"
     }
   ]
 }

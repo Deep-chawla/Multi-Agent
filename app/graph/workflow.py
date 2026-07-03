@@ -24,6 +24,7 @@ class AgentWorkflow:
         self.builder.add_node("research",self.nodes.research)
         self.builder.add_node("dispatcher", self.nodes.dispatcher)
         self.builder.add_node("final_response",self.nodes.final_response)
+        self.builder.add_node("knowledge", self.nodes.knowledge)
 
         # Start -> Supervisor
         self.builder.add_edge(START,"supervisor")
@@ -37,12 +38,13 @@ class AgentWorkflow:
                 "general": "general",
                 "coding": "coding",
                 "research": "research",
+                "knowledge": "knowledge",
                 "final_response": "final_response"
             }
         )
 
 
-        for node in ["general", "coding", "research"]:
+        for node in ["general", "coding", "research", "knowledge"]:
             self.builder.add_edge(node, "dispatcher")
 
         self.builder.add_edge("final_response",END)

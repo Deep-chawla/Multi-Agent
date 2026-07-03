@@ -6,6 +6,7 @@ from app.tools.coding.filesystem.list_directories import list_directory
 from app.tools.research.web_search import web_search
 from app.tools.research.wikipedia import wikipedia_search
 from app.tools.research.url_reader import url_reader
+from app.tools.knowledge.rag_tool import rag_tool
 
 
 
@@ -26,4 +27,8 @@ RESEARCH_TOOLS = [
     web_search,
     wikipedia_search,
     url_reader
+]
+
+RAG_TOOLS = [
+    rag_tool
 ]

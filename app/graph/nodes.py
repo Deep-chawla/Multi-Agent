@@ -16,7 +16,7 @@ class GraphNodes:
         plan = self.app.supervisor.route(question)
 
         return {
-            "plan": plan["steps"],          # or plan["steps"] if you haven't renamed it yet
+            "plan": plan["plan"],          # or plan["steps"] if you haven't renamed it yet
             "current_step": 0,
             "results": {}
         }
@@ -82,11 +82,27 @@ class GraphNodes:
         }
     
 
+    def knowledge(self, state: GraphState):
+        print("Executing Knowledge Agent...")
+
+        messages = self._build_agent_messages(state)
+
+        response = self.app.knowledge_agent.invoke(messages)
+
+        results = dict(state["results"])
+        results["knowledge"] = response.content
+
+        return {
+            "messages": [response],
+            "results": results,
+            "current_step": state["current_step"] + 1
+        }
+        
+
     def final_response(self, state: GraphState):
         """
         Combine all agent outputs into a single response.
         """
-
         parts = []
 
         for agent, output in state["results"].items():
@@ -98,22 +114,30 @@ class GraphNodes:
             ]
         }
     
+    from langchain_core.messages import HumanMessage
+
     def _build_agent_messages(self, state: GraphState):
-        """
-        Build the message for the current agent.
-        """
         step = state["plan"][state["current_step"]]
-        original_query = state["messages"][0].content
         previous_results = state["results"]
 
+        original_query = ""
+
+        for message in reversed(state["messages"]):
+            if isinstance(message, HumanMessage):
+                original_query = message.content
+                break
+
         prompt = f"""
+    Your Assigned Task:
+    {step["task"]}
 
-Assigned Task:
-{step["task"]}
+    Results from Previous Agents:
+    {previous_results}
 
-Previous Agent Results:
-{previous_results}
-"""
+    Complete only your assigned task.
+    """
+
         return [
-            HumanMessage(content=prompt)
+            HumanMessage(content=original_query),
+            HumanMessage(content=prompt),
         ]
