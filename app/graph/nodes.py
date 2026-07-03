@@ -37,11 +37,29 @@ class GraphNodes:
             "next": plan[current_step]["agent"]
         }
 
-    def general(self, state: GraphState):
+    # def general(self, state: GraphState):
+    #     print("Executing General Agent...")
+
+    #     messages = self._build_agent_messages(state)
+    #     response = self.app.general_agent.invoke(messages)
+
+    #     results = dict(state["results"])
+    #     results["general"] = response.content
+
+    #     return {
+    #         "messages": [response],
+    #         "results": results,
+    #         "current_step": state["current_step"] + 1
+    #     }
+    
+
+
+    async def general(self, state: GraphState):
         print("Executing General Agent...")
 
         messages = self._build_agent_messages(state)
-        response = self.app.general_agent.invoke(messages)
+
+        response = await self.app.general_agent.ainvoke(messages)
 
         results = dict(state["results"])
         results["general"] = response.content
@@ -49,14 +67,14 @@ class GraphNodes:
         return {
             "messages": [response],
             "results": results,
-            "current_step": state["current_step"] + 1
+            "current_step": state["current_step"] + 1,
         }
 
-    def coding(self, state: GraphState):
+    async def coding(self, state: GraphState):
         print("Executing Coding Agent...")
 
         messages = self._build_agent_messages(state)
-        response = self.app.coding_agent.invoke(messages)
+        response = await self.app.coding_agent.ainvoke(messages)
 
         results = dict(state["results"])
         results["coding"] = response.content
@@ -67,11 +85,11 @@ class GraphNodes:
             "current_step": state["current_step"] + 1
         }
 
-    def research(self, state: GraphState):
+    async def research(self, state: GraphState):
         print("Executing Research Agent...")
 
         messages = self._build_agent_messages(state)
-        response = self.app.research_agent.invoke(messages)
+        response = await self.app.research_agent.ainvoke(messages)
         results = dict(state["results"])
         results["research"] = response.content
 
@@ -82,12 +100,12 @@ class GraphNodes:
         }
     
 
-    def knowledge(self, state: GraphState):
+    async def knowledge(self, state: GraphState):
         print("Executing Knowledge Agent...")
 
         messages = self._build_agent_messages(state)
 
-        response = self.app.knowledge_agent.invoke(messages)
+        response = await self.app.knowledge_agent.ainvoke(messages)
 
         results = dict(state["results"])
         results["knowledge"] = response.content

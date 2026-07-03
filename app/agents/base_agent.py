@@ -1,4 +1,5 @@
 from abc import ABC
+from pyexpat.errors import messages
 from langchain_core.messages import (
     BaseMessage,
     SystemMessage,
@@ -37,22 +38,30 @@ class BaseAgent(ABC):
             return response
 
         return self._execute_tools(final_messages, response)
+    
+    async def ainvoke(self, messages: list[BaseMessage]):
+        final_messages = self._build_messages(messages)
+        response = await self.model.ainvoke(final_messages)
+        if not self.tools or not response.tool_calls:
+            return response
 
-    def _execute_tools(self, final_messages, response):
+        return await self._aexecute_tools(
+            final_messages,
+            response,
+        )
 
+    def _execute_tools(self, final_messages, response, return_messages=False):
         tool_map = {
             tool.name: tool
             for tool in self.tools
         }
 
         messages = final_messages + [response]
-
         while response.tool_calls:
 
             tool_messages = []
 
             for tool_call in response.tool_calls:
-
                 tool = tool_map.get(tool_call["name"])
 
                 if tool is None:
@@ -78,16 +87,97 @@ class BaseAgent(ABC):
                 )
 
             messages.extend(tool_messages)
-
             response = self.model.invoke(messages)
+            messages.append(response)
+            if return_messages:
+                return messages
+
+        return response
+    
+
+    async def _aexecute_tools(self, final_messages, response,return_messages=False):
+        tool_map = {
+            tool.name: tool
+            for tool in self.tools
+        }
+
+        messages = final_messages + [response]
+
+        while response.tool_calls:
+
+            tool_messages = []
+
+            for tool_call in response.tool_calls:
+
+                tool = tool_map.get(tool_call["name"])
+
+                if tool is None:
+                    tool_messages.append(
+                        ToolMessage(
+                            content=f"Tool '{tool_call['name']}' not found.",
+                            tool_call_id=tool_call["id"],
+                        )
+                    )
+                    continue
+
+                try:
+                    # We'll improve this in the next step
+                    result = tool.invoke(tool_call["args"])
+
+                except Exception as e:
+                    result = f"Tool Error: {e}"
+
+                tool_messages.append(
+                    ToolMessage(
+                        content=str(result),
+                        tool_call_id=tool_call["id"],
+                    )
+                )
+
+            messages.extend(tool_messages)
+
+            response = await self.model.ainvoke(messages)
 
             messages.append(response)
+    
+            if return_messages:
+                return messages
 
         return response
 
     def stream(self, messages: list[BaseMessage]):
-
         final_messages = self._build_messages(messages)
+        response = self.model.invoke(final_messages)
+        # No tools
+        if not self.tools or not response.tool_calls:
+            yield from self.model.stream(final_messages)
+            return
 
-        for chunk in self.model.stream(final_messages):
+        # Execute tools
+        history = self._execute_tools(
+            final_messages,
+            response,
+            return_messages=True,
+        )
+        # Remove the last AIMessage
+        history = history[:-1]
+        # Stream final answer
+        yield from self.model.stream(history)
+
+
+
+    async def astream(self, messages):
+        final_messages = self._build_messages(messages)
+        response = await self.model.ainvoke(final_messages)
+        if not self.tools or not response.tool_calls:
+            async for chunk in self.model.astream(final_messages):
+                yield chunk
+            return
+        history = await self._aexecute_tools(
+            final_messages,
+            response,
+            return_messages=True,
+        )
+        history = history[:-1]
+        async for chunk in self.model.astream(history):
             yield chunk

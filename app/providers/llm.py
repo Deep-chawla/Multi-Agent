@@ -12,9 +12,20 @@ class GroqProvider:
             max_tokens=settings.MAX_TOKENS,
         )
 
+    # ---------- Sync ----------
+
     def invoke(self, messages):
         return self.client.invoke(messages)
 
     def stream(self, messages):
         for chunk in self.client.stream(messages):
+            yield chunk
+
+    # ---------- Async ----------
+
+    async def ainvoke(self, messages):
+        return await self.client.ainvoke(messages)
+
+    async def astream(self, messages):
+        async for chunk in self.client.astream(messages):
             yield chunk

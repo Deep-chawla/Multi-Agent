@@ -1,8 +1,9 @@
 from bootstrap.server import start_application
 from langchain_core.messages import HumanMessage
+import asyncio
 
 
-def main():
+async def main():
 
     app = start_application()
 
@@ -26,7 +27,7 @@ def main():
 
         print("AI : ", end="", flush=True)
 
-        for message, metadata in app.workflow.graph.stream(
+        async for message, metadata in app.workflow.graph.astream(
             {
                 "messages": [
                 HumanMessage(content=question)
@@ -47,4 +48,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
