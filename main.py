@@ -1,6 +1,7 @@
 from bootstrap.server import start_application
 from langchain_core.messages import HumanMessage
 import asyncio
+import time
 
 
 async def main():
@@ -20,13 +21,16 @@ async def main():
 
     while True:
 
+
         question = input("\nYou : ")
+        start = time.perf_counter()
 
         if question.lower() == "exit":
             break
 
         print("AI : ", end="", flush=True)
 
+        t1 = time.perf_counter()
         async for message, metadata in app.workflow.graph.astream(
             {
                 "messages": [
@@ -44,6 +48,8 @@ async def main():
             if message.content:
                 print(message.content, end="", flush=True)
 
+        t2 = time.perf_counter()
+        print(f"\n\n[Execution Time: {t2 - t1:.2f}s]")
         print()
 
 

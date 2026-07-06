@@ -117,22 +117,96 @@ class GraphNodes:
         }
         
 
-    def final_response(self, state: GraphState):
-        """
-        Combine all agent outputs into a single response.
-        """
-        parts = []
+    # def final_response(self, state: GraphState):
+    #     """
+    #     Combine all agent outputs into a single response.
+    #     """
+    #     parts = []
 
-        for agent, output in state["results"].items():
-            parts.append(output)
+    #     for agent, output in state["results"].items():
+    #         parts.append(output)
+
+    #     return {
+    #         "messages": [
+    #             AIMessage(content="\n\n".join(parts))
+    #         ]
+    #     }
+
+
+
+
+    async def final_response(self, state: GraphState):
+        """
+        Generate the final response for the user.
+
+        - If only one agent produced an answer, return it directly.
+        - If multiple agents produced answers, use the LLM to merge them.
+        """
+
+        results = state["results"]
+
+        # No response
+        if not results:
+            return {
+                "messages": [
+                    AIMessage(content="I'm sorry, I couldn't generate a response.")
+                ]
+            }
+
+        # # Single agent -> No extra LLM call
+        # if len(results) == 1:
+        #     return {
+        #         "messages": [
+        #             AIMessage(
+        #                 content=next(iter(results.values()))
+        #             )
+        #         ]
+        #     }
+
+
+        original_query = ""
+
+        for message in reversed(state["messages"]):
+            if isinstance(message, HumanMessage):
+                original_query = message.content
+                break
+
+        combined_context = "\n\n".join(
+            f"### {agent.upper()} AGENT\n{output}"
+            for agent, output in results.items()
+        )
+
+        prompt = f"""
+    You are the final response generator of a multi-agent AI assistant.
+
+    Original User Question:
+    {original_query}
+
+    Outputs from different agents:
+
+    {combined_context}
+
+    Instructions:
+    - Combine the agent outputs into one natural response.
+    - Remove duplicate information.
+    - Preserve all important technical details.
+    - If code is present, keep the formatting exactly as it is.
+    - Present the answer as if it comes from a single assistant.
+    - Do NOT mention agents.
+    - Do NOT add information that is not present in the agent outputs.
+    """
+
+        response = await self.app.llm.ainvoke(
+            [
+                HumanMessage(content=prompt)
+            ]
+        )
 
         return {
-            "messages": [
-                AIMessage(content="\n\n".join(parts))
-            ]
+            "messages": [response]
         }
-    
-    from langchain_core.messages import HumanMessage
+            
+       
 
     def _build_agent_messages(self, state: GraphState):
         step = state["plan"][state["current_step"]]
@@ -154,8 +228,27 @@ class GraphNodes:
 
     Complete only your assigned task.
     """
+        
+
+        prompt = f"""
+Original User Request:
+{original_query}
+
+Your Assigned Task:
+{step["task"]}
+
+Results from Previous Agents:
+{previous_results}
+
+You are one agent in a multi-agent system.
+
+IMPORTANT:
+- Perform ONLY your assigned task.
+- Ignore all parts of the request that belong to other agents.
+- Do not answer anything outside your assigned task.
+- Another agent will handle the remaining tasks.
+"""
 
         return [
-            HumanMessage(content=original_query),
             HumanMessage(content=prompt),
         ]

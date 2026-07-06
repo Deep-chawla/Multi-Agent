@@ -40,6 +40,7 @@ class AgentWorkflow:
                 "research": "research",
                 "knowledge": "knowledge",
                 "final_response": "final_response"
+                # "__end__": END
             }
         )
 
