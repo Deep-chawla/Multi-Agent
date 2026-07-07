@@ -24,7 +24,7 @@ def web_search(query: str) -> str:
     """
     results = client.invoke(query)
     sources = []
-    for index, item in enumerate(results.get("results", [])[:5], start=1):
+    for index, item in enumerate(results.get("results", [])[:2], start=1):
         sources.append(
             f"""
     Source {index}

@@ -38,3 +38,5 @@ numpy
 qdrant-client
 langchain-qdrant
 rank-bm25
+pydantic
+SQLAlchemy

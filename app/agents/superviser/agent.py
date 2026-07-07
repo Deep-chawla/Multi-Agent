@@ -27,8 +27,13 @@ class SupervisorAgent:
 
         except Exception:
             return {
-                "plan": ["general"]
-            }
+                "plan": [
+                    {
+                        "agent": "general",
+                        "task": "Answer the user's question."
+                    }
+                ]
+    }
         
 # r = SupervisorAgent(llm=None)
 # print(r.route("research about LangChain and write simple program with fastapi"))

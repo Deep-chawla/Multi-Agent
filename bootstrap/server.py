@@ -9,6 +9,9 @@ from app.agents.Knowledge.agent import KnowledgeAgent
 
 from app.graph.workflow import AgentWorkflow
 
+from app.conversation.repository.memory import MemoryConversationRepository
+from app.conversation.service.conversation_service import ConversationService
+
 
 class Application:
 
@@ -16,6 +19,13 @@ class Application:
 
         # LLM
         self.llm = GroqProvider()
+
+        # Conversation
+        self.conversation_repository = MemoryConversationRepository()
+
+        self.conversation_service = ConversationService(
+            repository=self.conversation_repository
+        )
 
         # Agents
         self.general_agent = GeneralAgent(llm=self.llm)
