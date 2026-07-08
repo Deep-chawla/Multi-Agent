@@ -1,6 +1,7 @@
 import json
 
 from langchain_core.messages import HumanMessage, SystemMessage,BaseMessage
+from app.agents.superviser.schema import SupervisorPlan
 
 from app.prompt.super_visor_prompt import SUPER_VISOR_PROMPT
 from langchain_groq import ChatGroq
@@ -13,19 +14,19 @@ class SupervisorAgent:
         self.llm = llm
 
     def route(self, question: List[BaseMessage]):
-
         messages = [
             SystemMessage(content=SUPER_VISOR_PROMPT),
             *question
         ]
-
-        response = self.llm.invoke(messages)
-
         try:
+            response = self.llm.invoke(messages)
             plan = json.loads(response.content)
-            return plan
+            validated = SupervisorPlan.model_validate(plan)
+            return validated.model_dump()
+        
+        except Exception as e:
+            print("Supervisor validation failed:", e)
 
-        except Exception:
             return {
                 "plan": [
                     {
@@ -33,7 +34,8 @@ class SupervisorAgent:
                         "task": "Answer the user's question."
                     }
                 ]
-    }
+            }
+
         
 # r = SupervisorAgent(llm=None)
 # print(r.route("research about LangChain and write simple program with fastapi"))

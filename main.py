@@ -32,7 +32,6 @@ async def main():
         if question.lower() == "exit":
             break
 
-        start = time.perf_counter()
 
         # Get or create conversation
         conversation = conversation_service.get_or_create_conversation(
@@ -40,25 +39,32 @@ async def main():
             user_id=user_id,
         )
 
+        # t0 = time.perf_counter()
+
         # Save user message
         conversation_service.add_user_message(
             conversation_id=conversation.id,
             content=question,
         )
 
+        # t1 = time.perf_counter()
         # Load complete conversation history
         history = conversation_service.get_history(
             conversation.id
         )
 
+        # t2 = time.perf_counter()
+
         # Convert domain messages -> LangChain messages
         langchain_messages = LangChainMessageAdapter.to_langchain(
             history
         )
+        # t3 = time.perf_counter()
 
         print("AI : ", end="", flush=True)
         response_chunks = []
 
+       
         async for message, metadata in app.workflow.graph.astream(
             {
                 "messages": langchain_messages
@@ -66,6 +72,7 @@ async def main():
             config=config,
             stream_mode="messages",
         ):
+
 
             # Ignore intermediate nodes
             if metadata.get("langgraph_node") != "final_response":
@@ -77,6 +84,8 @@ async def main():
 
         final_response = "".join(response_chunks)
 
+        # t4 = time.perf_counter()
+
         # Save assistant response
         conversation_service.add_assistant_message(
             conversation_id=conversation.id,
@@ -84,9 +93,16 @@ async def main():
             agent="multi-agent",  # Temporary
         )
 
-        end = time.perf_counter()
+        # t5 = time.perf_counter()
 
-        print(f"\n\n[Execution Time: {end - start:.2f}s]")
+        # print(f"""
+        #     Add User Message      : {(t1-t0):.3f}s
+        #     Load History          : {(t2-t1):.3f}s
+        #     Adapter               : {(t3-t2):.3f}s
+        #     LangGraph + LLM       : {(t4-t3):.3f}s
+        #     Save Assistant        : {(t5-t4):.3f}s
+        #     Total                 : {(t5-t0):.3f}s
+        #     """)
         print()
 
 

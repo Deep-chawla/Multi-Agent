@@ -1,6 +1,7 @@
 from langchain_core.messages import HumanMessage,AIMessage
 
 from app.graph.state import GraphState
+import time
 
 
 class GraphNodes:
@@ -12,8 +13,10 @@ class GraphNodes:
         """
         Create the execution plan.
         """
-        question = state["messages"]
+        # start = time.perf_counter()
+        question = state["messages"][-3:]
         plan = self.app.supervisor.route(question)
+        # print(f"Supervisor: {time.perf_counter()-start:.2f}s")
 
         return {
             "plan": plan["plan"],          # or plan["steps"] if you haven't renamed it yet
@@ -37,33 +40,14 @@ class GraphNodes:
             "next": plan[current_step]["agent"]
         }
 
-    # def general(self, state: GraphState):
-    #     print("Executing General Agent...")
-
-    #     messages = self._build_agent_messages(state)
-    #     response = self.app.general_agent.invoke(messages)
-
-    #     results = dict(state["results"])
-    #     results["general"] = response.content
-
-    #     return {
-    #         "messages": [response],
-    #         "results": results,
-    #         "current_step": state["current_step"] + 1
-    #     }
-    
-
 
     async def general(self, state: GraphState):
-        print("Executing General Agent...")
-
+       
         messages = self._build_agent_messages(state)
-
         response = await self.app.general_agent.ainvoke(messages)
 
         results = dict(state["results"])
         results["general"] = response.content
-
         return {
             "messages": [response],
             "results": results,
@@ -71,8 +55,6 @@ class GraphNodes:
         }
 
     async def coding(self, state: GraphState):
-        print("Executing Coding Agent...")
-
         messages = self._build_agent_messages(state)
         response = await self.app.coding_agent.ainvoke(messages)
 
@@ -117,24 +99,6 @@ class GraphNodes:
         }
         
 
-    # def final_response(self, state: GraphState):
-    #     """
-    #     Combine all agent outputs into a single response.
-    #     """
-    #     parts = []
-
-    #     for agent, output in state["results"].items():
-    #         parts.append(output)
-
-    #     return {
-    #         "messages": [
-    #             AIMessage(content="\n\n".join(parts))
-    #         ]
-    #     }
-
-
-
-
     async def final_response(self, state: GraphState):
         """
         Generate the final response for the user.
@@ -142,7 +106,7 @@ class GraphNodes:
         - If only one agent produced an answer, return it directly.
         - If multiple agents produced answers, use the LLM to merge them.
         """
-
+    
         results = state["results"]
 
         # No response
@@ -152,17 +116,6 @@ class GraphNodes:
                     AIMessage(content="I'm sorry, I couldn't generate a response.")
                 ]
             }
-
-        # # Single agent -> No extra LLM call
-        # if len(results) == 1:
-        #     return {
-        #         "messages": [
-        #             AIMessage(
-        #                 content=next(iter(results.values()))
-        #             )
-        #         ]
-        #     }
-
 
         original_query = ""
 
@@ -201,7 +154,6 @@ class GraphNodes:
                 HumanMessage(content=prompt)
             ]
         )
-
         return {
             "messages": [response]
         }
@@ -251,4 +203,5 @@ IMPORTANT:
 
         return [
             HumanMessage(content=prompt),
+            *state["messages"],
         ]

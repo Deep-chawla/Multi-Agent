@@ -40,3 +40,4 @@ langchain-qdrant
 rank-bm25
 pydantic
 SQLAlchemy
+psycopg2-binary

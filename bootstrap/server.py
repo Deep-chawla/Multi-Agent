@@ -10,6 +10,8 @@ from app.agents.Knowledge.agent import KnowledgeAgent
 from app.graph.workflow import AgentWorkflow
 
 from app.conversation.repository.memory import MemoryConversationRepository
+from app.conversation.repository.postgres import PostgresConversationRepository
+from app.database.session import SessionLocal
 from app.conversation.service.conversation_service import ConversationService
 
 
@@ -21,7 +23,8 @@ class Application:
         self.llm = GroqProvider()
 
         # Conversation
-        self.conversation_repository = MemoryConversationRepository()
+        self.conversation_repository = PostgresConversationRepository(SessionLocal)
+        # self.conversation_repository = MemoryConversationRepository()
 
         self.conversation_service = ConversationService(
             repository=self.conversation_repository
