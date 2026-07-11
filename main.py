@@ -75,11 +75,12 @@ async def main():
 
 
             # Ignore intermediate nodes
-            if metadata.get("langgraph_node") != "final_response":
-                continue
+            # if metadata.get("langgraph_node") != "final_response":
+            #     continue
 
             if message.content:
                 print(message.content, end="", flush=True)
+                # print(f"[{metadata['langgraph_node']}] {repr(message.content)}")
                 response_chunks.append(message.content)
 
         final_response = "".join(response_chunks)

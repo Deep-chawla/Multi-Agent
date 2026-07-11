@@ -39,8 +39,8 @@ class AgentWorkflow:
                 "coding": "coding",
                 "research": "research",
                 "knowledge": "knowledge",
-                "final_response": "final_response"
-                # "__end__": END
+                "final_response": "final_response",
+                "__end__": END
             }
         )
 

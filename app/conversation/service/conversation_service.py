@@ -49,7 +49,6 @@ class ConversationService:
         )
     
     
-
     def add_assistant_message(self,conversation_id: str,content: str,agent: str,) -> Message:
 
         message = self._create_message(
@@ -64,8 +63,6 @@ class ConversationService:
             message,
         )
     
-
-
 
     def _create_message(self,conversation_id: str,role: str,content: str,agent: str | None = None,metadata: dict[str, Any] | None = None,) -> Message:
         return Message(

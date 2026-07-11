@@ -3,6 +3,8 @@ from langchain_core.messages import HumanMessage,AIMessage
 from app.graph.state import GraphState
 import time
 
+from app.config.settings import Settings
+
 
 class GraphNodes:
 
@@ -14,6 +16,7 @@ class GraphNodes:
         Create the execution plan.
         """
         # start = time.perf_counter()
+        # print(f"SuperVisor Start : {start}")
         question = state["messages"][-3:]
         plan = self.app.supervisor.route(question)
         # print(f"Supervisor: {time.perf_counter()-start:.2f}s")
@@ -32,6 +35,11 @@ class GraphNodes:
         current_step = state["current_step"]
 
         if current_step >= len(plan):
+
+            if len(plan) == 1:
+                return {
+                    "next": "__end__"
+                }
             return {
                 "next": "final_response"
             }
@@ -42,27 +50,38 @@ class GraphNodes:
 
 
     async def general(self, state: GraphState):
+        # start = time.perf_counter()
+        # print(f"General Start : {start}")
        
         messages = self._build_agent_messages(state)
         response = await self.app.general_agent.ainvoke(messages)
 
         results = dict(state["results"])
         results["general"] = response.content
+        # print(results)
+        # print(f"Gneral: {time.perf_counter()-start:.2f}s")
+        if len(state["plan"]) == 1:
+            return {
+                "messages": [response],
+                "results": results,
+                "current_step": state["current_step"] + 1,
+            }
+
         return {
-            "messages": [response],
             "results": results,
             "current_step": state["current_step"] + 1,
         }
-
     async def coding(self, state: GraphState):
+        # start = time.perf_counter()
         messages = self._build_agent_messages(state)
         response = await self.app.coding_agent.ainvoke(messages)
 
         results = dict(state["results"])
         results["coding"] = response.content
+        # print(f"Supervisor: {time.perf_counter()-start:.2f}s")
 
         return {
-            "messages": [response],
+            # "messages": [response],
             "results": results,
             "current_step": state["current_step"] + 1
         }
@@ -76,7 +95,7 @@ class GraphNodes:
         results["research"] = response.content
 
         return {
-            "messages": [response],
+            # "messages": [response],
             "results": results,
             "current_step": state["current_step"] + 1
         }
@@ -93,7 +112,7 @@ class GraphNodes:
         results["knowledge"] = response.content
 
         return {
-            "messages": [response],
+            # "messages": [response],
             "results": results,
             "current_step": state["current_step"] + 1
         }
@@ -106,6 +125,7 @@ class GraphNodes:
         - If only one agent produced an answer, return it directly.
         - If multiple agents produced answers, use the LLM to merge them.
         """
+        start = time.perf_counter()
     
         results = state["results"]
 
@@ -154,6 +174,10 @@ class GraphNodes:
                 HumanMessage(content=prompt)
             ]
         )
+        # for i in state["messages"]:
+        #     print(i)
+        print(f"Final: {time.perf_counter()-start:.2f}s")
+        # print(response.content)
         return {
             "messages": [response]
         }
@@ -200,8 +224,8 @@ IMPORTANT:
 - Do not answer anything outside your assigned task.
 - Another agent will handle the remaining tasks.
 """
-
+        history = state["messages"][-Settings.MAX_HISTORY:]
         return [
             HumanMessage(content=prompt),
-            *state["messages"],
+            *history
         ]

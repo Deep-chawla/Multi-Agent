@@ -13,28 +13,42 @@ class SupervisorAgent:
     def __init__(self, llm):
         self.llm = llm
 
-    def route(self, question: List[BaseMessage]):
+
+    def route(self, question):
+
         messages = [
             SystemMessage(content=SUPER_VISOR_PROMPT),
-            *question
+            *question,
         ]
-        try:
-            response = self.llm.invoke(messages)
-            plan = json.loads(response.content)
-            validated = SupervisorPlan.model_validate(plan)
-            return validated.model_dump()
-        
-        except Exception as e:
-            print("Supervisor validation failed:", e)
 
-            return {
-                "plan": [
-                    {
-                        "agent": "general",
-                        "task": "Answer the user's question."
-                    }
-                ]
-            }
+        plan = self.llm.invoke_structured(
+            messages,
+            SupervisorPlan,
+        )
+        return plan.model_dump()
+
+    # def route(self, question: List[BaseMessage]):
+    #     messages = [
+    #         SystemMessage(content=SUPER_VISOR_PROMPT),
+    #         *question
+    #     ]
+    #     try:
+    #         response = self.llm.invoke(messages)
+    #         plan = json.loads(response.content)
+    #         validated = SupervisorPlan.model_validate(plan)
+    #         return validated.model_dump()
+        
+    #     except Exception as e:
+    #         print("Supervisor validation failed:", e)
+
+    #         return {
+    #             "plan": [
+    #                 {
+    #                     "agent": "general",
+    #                     "task": "Answer the user's question."
+    #                 }
+    #             ]
+    #         }
 
         
 # r = SupervisorAgent(llm=None)
