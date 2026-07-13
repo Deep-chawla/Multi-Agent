@@ -75,8 +75,8 @@ async def main():
 
 
             # Ignore intermediate nodes
-            # if metadata.get("langgraph_node") != "final_response":
-            #     continue
+            if metadata.get("langgraph_node") != "final_response":
+                continue
 
             if message.content:
                 print(message.content, end="", flush=True)

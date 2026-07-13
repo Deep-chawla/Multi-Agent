@@ -22,9 +22,11 @@ def web_search(query: str) -> str:
 
     Do NOT answer these questions from memory.
     """
+
+    print("Tavily is Executed")
     results = client.invoke(query)
     sources = []
-    for index, item in enumerate(results.get("results", [])[:2], start=1):
+    for index, item in enumerate(results.get("results", [])[:3], start=1):
         sources.append(
             f"""
     Source {index}
@@ -39,5 +41,5 @@ def web_search(query: str) -> str:
     {item['url']}
     """
         )
-
+    
     return "\n".join(sources)

@@ -7,6 +7,9 @@ from langchain_core.messages import (
 )
 
 
+from collections import defaultdict
+
+
 class BaseAgent(ABC):
     """
     Base class for all AI agents.
@@ -44,6 +47,7 @@ class BaseAgent(ABC):
 
 
         response = await self.model.ainvoke(final_messages)
+
         if not self.tools or not response.tool_calls:
             return response
 
@@ -97,7 +101,13 @@ class BaseAgent(ABC):
         return response
     
 
-    async def _aexecute_tools(self, final_messages, response,return_messages=False):
+
+    async def _aexecute_tools(
+        self,
+        final_messages,
+        response,
+        return_messages=False,
+    ):
         tool_map = {
             tool.name: tool
             for tool in self.tools
@@ -105,25 +115,59 @@ class BaseAgent(ABC):
 
         messages = final_messages + [response]
 
-        while response.tool_calls:
+        # Prevent infinite tool loops
+        MAX_TOOL_ITERATIONS = 5
+
+        # Per-tool limits
+        TOOL_LIMITS = {
+            "web_search": 1,
+            # "url_reader": 5,
+            # "calculator": 10,
+        }
+
+        tool_usage = defaultdict(int)
+
+        for _ in range(MAX_TOOL_ITERATIONS):
+
+            if not response.tool_calls:
+                break
 
             tool_messages = []
 
             for tool_call in response.tool_calls:
+                tool_name = tool_call["name"]
 
-                tool = tool_map.get(tool_call["name"])
+                tool = tool_map.get(tool_name)
 
                 if tool is None:
                     tool_messages.append(
                         ToolMessage(
-                            content=f"Tool '{tool_call['name']}' not found.",
+                            content=f"Tool '{tool_name}' not found.",
                             tool_call_id=tool_call["id"],
                         )
                     )
                     continue
 
+                # ---------- Tool limit ----------
+                tool_usage[tool_name] += 1
+
+                limit = TOOL_LIMITS.get(tool_name)
+
+                if limit is not None and tool_usage[tool_name] > limit:
+                    tool_messages.append(
+                        ToolMessage(
+                            content=(
+                                f"The tool '{tool_name}' has already been used "
+                                f"{limit} time(s). Use the previous tool results "
+                                f"to answer the user."
+                            ),
+                            tool_call_id=tool_call["id"],
+                        )
+                    )
+                    continue
+
+                # ---------- Execute Tool ----------
                 try:
-                    # We'll improve this in the next step
                     result = tool.invoke(tool_call["args"])
 
                 except Exception as e:
@@ -138,12 +182,14 @@ class BaseAgent(ABC):
 
             messages.extend(tool_messages)
 
-            response = await self.model.ainvoke(messages)
-
+            try:
+                response = await self.model.ainvoke(messages)
+            except Exception:
+                break
             messages.append(response)
-    
-            if return_messages:
-                return messages
+
+        if return_messages:
+            return messages
 
         return response
 

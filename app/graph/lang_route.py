@@ -1,4 +1,7 @@
-from app.graph.state import GraphState
+from langgraph.types import Send
 
 def route(state):
-    return state["next"]
+    return [
+        Send(step["agent"], state)
+        for step in state["plan"]
+    ]

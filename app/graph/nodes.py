@@ -1,6 +1,6 @@
 from langchain_core.messages import HumanMessage,AIMessage
 
-from app.graph.state import GraphState
+from app.graph.state import GraphState,PlanStep
 import time
 
 from app.config.settings import Settings
@@ -10,6 +10,13 @@ class GraphNodes:
 
     def __init__(self, app):
         self.app = app
+
+    def _get_step(self, state, agent: str):
+        return next(
+            step
+            for step in state["plan"]
+                if step["agent"] == agent
+            )
 
     def supervisor(self, state: GraphState):
         """
@@ -23,7 +30,6 @@ class GraphNodes:
 
         return {
             "plan": plan["plan"],          # or plan["steps"] if you haven't renamed it yet
-            "current_step": 0,
             "results": {}
         }
 
@@ -50,71 +56,81 @@ class GraphNodes:
 
 
     async def general(self, state: GraphState):
-        # start = time.perf_counter()
+        start = time.perf_counter()
+        print("General : ",start)
         # print(f"General Start : {start}")
-       
-        messages = self._build_agent_messages(state)
+
+        step = self._get_step(state,"general")
+        messages = self._build_agent_messages(state,step)
         response = await self.app.general_agent.ainvoke(messages)
 
-        results = dict(state["results"])
-        results["general"] = response.content
-        # print(results)
-        # print(f"Gneral: {time.perf_counter()-start:.2f}s")
-        if len(state["plan"]) == 1:
-            return {
-                "messages": [response],
-                "results": results,
-                "current_step": state["current_step"] + 1,
-            }
 
         return {
-            "results": results,
-            "current_step": state["current_step"] + 1,
+            "results":{
+                "general": response.content
+            },
         }
+    
     async def coding(self, state: GraphState):
         # start = time.perf_counter()
-        messages = self._build_agent_messages(state)
+        start = time.perf_counter()
+        print("Coding : ",start)
+        step = self._get_step(state,"coding")
+        messages = self._build_agent_messages(state,step)
         response = await self.app.coding_agent.ainvoke(messages)
 
-        results = dict(state["results"])
-        results["coding"] = response.content
+        # results = dict(state["results"])
+        # results["coding"] = response.content
         # print(f"Supervisor: {time.perf_counter()-start:.2f}s")
 
         return {
             # "messages": [response],
-            "results": results,
-            "current_step": state["current_step"] + 1
+            "results": {
+                "coding":response.content
+            },
         }
 
     async def research(self, state: GraphState):
-        print("Executing Research Agent...")
+        # print("Executing Research Agent...")
+        start = time.perf_counter()
+        print("Research : ",start)
 
-        messages = self._build_agent_messages(state)
-        response = await self.app.research_agent.ainvoke(messages)
+        step = self._get_step(state,"research")
+        messages = self._build_agent_messages(state,step)
+        try:
+            response = await self.app.research_agent.ainvoke(messages)
+        except Exception as e:
+            print(e)
+            raise
         results = dict(state["results"])
         results["research"] = response.content
 
         return {
             # "messages": [response],
-            "results": results,
-            "current_step": state["current_step"] + 1
+            "results": {
+                "research":response.content
+            },
+            # "current_step": state["current_step"] + 1
         }
     
 
     async def knowledge(self, state: GraphState):
-        print("Executing Knowledge Agent...")
-
-        messages = self._build_agent_messages(state)
+        # print("Executing Knowledge Agent...")
+        start = time.perf_counter()
+        print("Knowledge : ",start)
+        step = self._get_step(state,"knowledge")
+        messages = self._build_agent_messages(state,step)
 
         response = await self.app.knowledge_agent.ainvoke(messages)
 
-        results = dict(state["results"])
-        results["knowledge"] = response.content
+        # results = dict(state["results"])
+        # results["knowledge"] = response.content
 
         return {
             # "messages": [response],
-            "results": results,
-            "current_step": state["current_step"] + 1
+            "results": {
+                "knowledge":response.content
+            },
         }
         
 
@@ -168,15 +184,18 @@ class GraphNodes:
     - Do NOT mention agents.
     - Do NOT add information that is not present in the agent outputs.
     """
+        
 
         response = await self.app.llm.ainvoke(
             [
                 HumanMessage(content=prompt)
             ]
         )
+
+        # print(response)
         # for i in state["messages"]:
         #     print(i)
-        print(f"Final: {time.perf_counter()-start:.2f}s")
+        # print(f"Final: {time.perf_counter()-start:.2f}s")
         # print(response.content)
         return {
             "messages": [response]
@@ -184,8 +203,7 @@ class GraphNodes:
             
        
 
-    def _build_agent_messages(self, state: GraphState):
-        step = state["plan"][state["current_step"]]
+    def _build_agent_messages(self, state: GraphState,step :PlanStep):
         previous_results = state["results"]
 
         original_query = ""
