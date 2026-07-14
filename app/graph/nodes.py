@@ -2,7 +2,7 @@ from langchain_core.messages import HumanMessage,AIMessage,SystemMessage
 
 from app.graph.state import GraphState,PlanStep
 import time
-
+from app.agents.superviser.schema import TaskExecution
 from app.config.settings import Settings
 
 
@@ -11,51 +11,46 @@ class GraphNodes:
     def __init__(self, app):
         self.app = app
 
+
     def supervisor(self, state: GraphState):
-        """
-        Create the execution plan.
-        """
-        # start = time.perf_counter()
-        # print(f"SuperVisor Start : {start}")
+
         latest_question = ""
 
         for message in reversed(state["messages"]):
             if isinstance(message, HumanMessage):
                 latest_question = message.content
                 break
-            
-        plan = self.app.supervisor.route(latest_question)
-        # print(f"Supervisor: {time.perf_counter()-start:.2f}s")
 
-        return {
-           "plan": plan["plan"],
-            "results": {},
-            "completed_steps": [],
-            "ready_steps": [],
+        plan = self.app.supervisor.route(latest_question)["plan"]
+
+        executions = {
+            step["id"]: TaskExecution(step=PlanStep(**step))
+            for step in plan
         }
-    
-
-
-    def scheduler(self, state):
-        # print("\n===== Scheduler =====")
-        # print("Completed:", state["completed_steps"])
-        # print("Plan:", state["plan"])
-
-        completed = set(state["completed_steps"])
-        ready = []
-
-        for step in state["plan"]:
-            if step["id"] in completed:
-                continue
-
-            if all(dep in completed for dep in step["depends_on"]):
-                ready.append(step)
-
-        # print("Ready:", ready)
-        # print("=====================\n")
 
         return {
-            "ready_steps": ready
+            "plan": plan,
+            "executions": executions,
+            "results": {},
+        }
+
+
+    def scheduler(self, state: GraphState):
+
+        executions = dict(state["executions"])
+
+        for execution in executions.values():
+            if execution.status != "PENDING":
+                continue
+            deps = execution.step.depends_on
+            if all(
+                executions[d].status == "COMPLETED"
+                for d in deps
+            ):
+                execution.status = "READY"
+
+        return {
+            "executions": executions
         }
 
     # def scheduler(self,state):
@@ -74,90 +69,127 @@ class GraphNodes:
     #     }
 
     async def general(self, state: GraphState):
-        start = time.perf_counter()
-        print("General : ",start)
-        # print(f"General Start : {start}")
-
         step = state["current_task"]
-        messages = self._build_agent_messages(state,step)
+        executions = state["executions"]
+
+        messages = self._build_agent_messages(state, step)
+
         try:
             response = await self.app.general_agent.ainvoke(messages)
 
+            executions[step.id].status = "COMPLETED"
+            executions[step.id].result = response.content
+
+            return {
+                "results": {
+                    "general": response.content
+                },
+                "executions": executions,
+            }
+
         except Exception as e:
-            print(e)
-        # print(response.content)
 
+            executions[step.id].status = "FAILED"
+            executions[step.id].error = str(e)
 
-        return {
-            "results":{
-                "general": response.content
-            },
-            "completed_steps": [step["id"]],
-        }
+            return {
+                "executions": executions
+            }
     
     async def coding(self, state: GraphState):
-        # start = time.perf_counter()
         start = time.perf_counter()
-        print("Coding : ",start)
+        print("Coding :", start)
+
         step = state["current_task"]
-        messages = self._build_agent_messages(state,step)
-        response = await self.app.coding_agent.ainvoke(messages)
+        executions = state["executions"]
 
-        # results = dict(state["results"])
-        # results["coding"] = response.content
-        # print(f"Supervisor: {time.perf_counter()-start:.2f}s")
+        messages = self._build_agent_messages(state, step)
 
-        return {
-            # "messages": [response],
-            "results": {
-                "coding":response.content
-            },
-            "completed_steps": [step["id"]],
-        }
+        try:
+            response = await self.app.coding_agent.ainvoke(messages)
+
+            executions[step.id].status = "COMPLETED"
+            executions[step.id].result = response.content
+
+            return {
+                "results": {
+                    "coding": response.content
+                },
+                "executions": executions,
+            }
+
+        except Exception as e:
+            executions[step.id].status = "FAILED"
+            executions[step.id].error = str(e)
+
+            return {
+                "executions": executions
+            }
+        
 
     async def research(self, state: GraphState):
-        # print("Executing Research Agent...")
+    
         start = time.perf_counter()
-        print("Research : ",start)
+        print("Reserch :", start)
 
         step = state["current_task"]
-        messages = self._build_agent_messages(state,step)
+        executions = state["executions"]
+
+        messages = self._build_agent_messages(state, step)
+
         try:
             response = await self.app.research_agent.ainvoke(messages)
-        except Exception as e:
-            print(e)
-            raise
 
-        return {
-            # "messages": [response],
-            "results": {
-                "research":response.content
-            },
-            "completed_steps": [step["id"]],
-            # "current_step": state["current_step"] + 1
-        }
-    
+            executions[step.id].status = "COMPLETED"
+            executions[step.id].result = response.content
+
+            return {
+                "results": {
+                    "research": response.content
+                },
+                "executions": executions,
+            }
+
+        except Exception as e:
+            executions[step.id].status = "FAILED"
+            executions[step.id].error = str(e)
+
+            return {
+                "executions": executions
+            }
+                
 
     async def knowledge(self, state: GraphState):
-        # print("Executing Knowledge Agent...")
+
         start = time.perf_counter()
-        print("Knowledge : ",start)
+        print("knowledge:", start)
+
         step = state["current_task"]
-        messages = self._build_agent_messages(state,step)
+        executions = state["executions"]
 
-        response = await self.app.knowledge_agent.ainvoke(messages)
+        messages = self._build_agent_messages(state, step)
 
-        # results = dict(state["results"])
-        # results["knowledge"] = response.content
+        try:
+            response = await self.app.knowledge_agent.ainvoke(messages)
 
-        return {
-            # "messages": [response],
-            "results": {
-                "knowledge":response.content
-            },
-            "completed_steps": [step["id"]],
-        }
-        
+            executions[step.id].status = "COMPLETED"
+            executions[step.id].result = response.content
+
+            return {
+                "results": {
+                    "knowledge": response.content
+                },
+                "executions": executions,
+            }
+
+        except Exception as e:
+            executions[step.id].status = "FAILED"
+            executions[step.id].error = str(e)
+
+            return {
+                "executions": executions
+            }
+                    
 
     async def final_response(self, state: GraphState):
         """
@@ -228,7 +260,7 @@ class GraphNodes:
             
        
 
-    def _build_agent_messages(self, state: GraphState,step :PlanStep):
+    def _build_agent_messages(self, state: GraphState, step: PlanStep):
         previous_results = state["results"]
 
         original_query = ""
@@ -239,36 +271,27 @@ class GraphNodes:
                 break
 
         prompt = f"""
+    Original User Request:
+    {original_query}
+
     Your Assigned Task:
-    {step["task"]}
+    {step.task}
 
     Results from Previous Agents:
     {previous_results}
 
-    Complete only your assigned task.
+    You are one agent in a multi-agent system.
+
+    IMPORTANT:
+    - Perform ONLY your assigned task.
+    - Ignore all parts of the request that belong to other agents.
+    - Do not answer anything outside your assigned task.
+    - Another agent will handle the remaining tasks.
     """
-        
 
-        prompt = f"""
-Original User Request:
-{original_query}
-
-Your Assigned Task:
-{step["task"]}
-
-Results from Previous Agents:
-{previous_results}
-
-You are one agent in a multi-agent system.
-
-IMPORTANT:
-- Perform ONLY your assigned task.
-- Ignore all parts of the request that belong to other agents.
-- Do not answer anything outside your assigned task.
-- Another agent will handle the remaining tasks.
-"""
         history = state["messages"][-Settings.MAX_HISTORY:]
+
         return [
             SystemMessage(content=prompt),
-            *history
+            *history,
         ]

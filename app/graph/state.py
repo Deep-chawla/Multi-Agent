@@ -2,7 +2,9 @@ from typing import Annotated, TypedDict
 
 from langchain_core.messages import BaseMessage
 from langgraph.graph.message import add_messages
-from app.graph.reducer import merge_completed_steps,merge_results,merge_ready_steps
+from app.graph.reducer import merge_completed_steps,merge_results,merge_ready_steps,merge_executions
+from app.agents.superviser.schema import TaskExecution
+
 
 
 
@@ -12,10 +14,9 @@ class PlanStep(TypedDict):
     task: str
     depends_on: list[int]
 
+
+
 class GraphState(TypedDict):
-    """
-    Shared state across the LangGraph workflow.
-    """
 
     # Conversation history
     messages: Annotated[list[BaseMessage], add_messages]
@@ -23,9 +24,11 @@ class GraphState(TypedDict):
     # Execution plan
     plan: list[PlanStep]
 
+    # Execution state
+    executions: Annotated[dict[int, TaskExecution],merge_executions]
 
-    # Store outputs from each agent
-    results:Annotated[dict[str, str],merge_results]
-    completed_steps: Annotated[list[int],merge_completed_steps]
+    # Current task being executed
     current_task: PlanStep | None
-    ready_steps: Annotated[list[PlanStep], merge_ready_steps]
+
+    # Agent results
+    results: Annotated[dict[str, str], merge_results]

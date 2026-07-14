@@ -27,6 +27,7 @@ class SupervisorAgent:
         )
 
         return plan.model_dump()
+        # return plan
 
     # def route(self, question: List[BaseMessage]):
     #     messages = [
