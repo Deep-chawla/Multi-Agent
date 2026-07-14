@@ -14,17 +14,18 @@ class SupervisorAgent:
         self.llm = llm
 
 
-    def route(self, question):
+    def route(self, question: str):
 
         messages = [
             SystemMessage(content=SUPER_VISOR_PROMPT),
-            *question,
+            HumanMessage(content=question),
         ]
 
         plan = self.llm.invoke_structured(
             messages,
             SupervisorPlan,
         )
+
         return plan.model_dump()
 
     # def route(self, question: List[BaseMessage]):

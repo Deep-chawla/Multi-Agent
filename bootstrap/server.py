@@ -19,8 +19,12 @@ class Application:
 
     def __init__(self):
 
-        # LLM
-        self.llm = GroqProvider()
+        self.general_llm = GroqProvider("llama-3.1-8b-instant")
+        self.coding_llm = GroqProvider("openai/gpt-oss-120b")
+        self.research_llm = GroqProvider("openai/gpt-oss-120b")
+        self.knowledge_llm = GroqProvider("llama-3.1-8b-instant")
+        self.supervisor_llm = GroqProvider("openai/gpt-oss-120b")
+        self.final_llm = GroqProvider("openai/gpt-oss-120b")
 
         # Conversation
         self.conversation_repository = PostgresConversationRepository(SessionLocal)
@@ -29,15 +33,11 @@ class Application:
         self.conversation_service = ConversationService(
             repository=self.conversation_repository
         )
-
-        # Agents
-        self.general_agent = GeneralAgent(llm=self.llm)
-
-        self.coding_agent = CodingAgent(llm=self.llm)
-
-        self.supervisor = SupervisorAgent(llm=self.llm)
-        self.research_agent = ResearchAgent(llm=self.llm)
-        self.knowledge_agent = KnowledgeAgent(llm=self.llm)
+        self.general_agent = GeneralAgent(llm=self.general_llm)
+        self.coding_agent = CodingAgent(llm=self.coding_llm)
+        self.research_agent = ResearchAgent(llm=self.research_llm)
+        self.knowledge_agent = KnowledgeAgent(llm=self.knowledge_llm)
+        self.supervisor = SupervisorAgent(llm=self.supervisor_llm)
 
         # LangGraph Workflow
         self.workflow = AgentWorkflow(self)

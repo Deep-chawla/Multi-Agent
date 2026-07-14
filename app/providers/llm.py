@@ -7,10 +7,10 @@ from langchain_core.messages import SystemMessage,AIMessage,HumanMessage
 
 class GroqProvider:
 
-    def __init__(self):
+    def __init__(self,model:str="openai/gpt-oss-120b"):
         self.client = ChatGroq(
             api_key=settings.GROQ_API_KEY,
-            model=settings.MODEL_NAME,
+            model=model,
             temperature=settings.TEMPERATURE,
             max_tokens=settings.MAX_TOKENS,
         )

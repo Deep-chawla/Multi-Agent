@@ -1,4 +1,4 @@
-from langchain_core.messages import HumanMessage,AIMessage
+from langchain_core.messages import HumanMessage,AIMessage,SystemMessage
 
 from app.graph.state import GraphState,PlanStep
 import time
@@ -11,71 +11,95 @@ class GraphNodes:
     def __init__(self, app):
         self.app = app
 
-    def _get_step(self, state, agent: str):
-        return next(
-            step
-            for step in state["plan"]
-                if step["agent"] == agent
-            )
-
     def supervisor(self, state: GraphState):
         """
         Create the execution plan.
         """
         # start = time.perf_counter()
         # print(f"SuperVisor Start : {start}")
-        question = state["messages"][-3:]
-        plan = self.app.supervisor.route(question)
+        latest_question = ""
+
+        for message in reversed(state["messages"]):
+            if isinstance(message, HumanMessage):
+                latest_question = message.content
+                break
+            
+        plan = self.app.supervisor.route(latest_question)
         # print(f"Supervisor: {time.perf_counter()-start:.2f}s")
 
         return {
-            "plan": plan["plan"],          # or plan["steps"] if you haven't renamed it yet
-            "results": {}
+           "plan": plan["plan"],
+            "results": {},
+            "completed_steps": [],
+            "ready_steps": [],
         }
+    
 
-    def dispatcher(self, state: GraphState):
-        """
-        Decide which agent to execute next.
-        """
-        plan = state["plan"]
-        current_step = state["current_step"]
 
-        if current_step >= len(plan):
+    def scheduler(self, state):
+        # print("\n===== Scheduler =====")
+        # print("Completed:", state["completed_steps"])
+        # print("Plan:", state["plan"])
 
-            if len(plan) == 1:
-                return {
-                    "next": "__end__"
-                }
-            return {
-                "next": "final_response"
-            }
+        completed = set(state["completed_steps"])
+        ready = []
+
+        for step in state["plan"]:
+            if step["id"] in completed:
+                continue
+
+            if all(dep in completed for dep in step["depends_on"]):
+                ready.append(step)
+
+        # print("Ready:", ready)
+        # print("=====================\n")
 
         return {
-            "next": plan[current_step]["agent"]
+            "ready_steps": ready
         }
 
+    # def scheduler(self,state):
+    #     completed = set(state["completed_steps"])
+    #     ready = []
+    #     for step in state["plan"]:
+
+    #         if step["id"] in completed:
+    #             continue
+
+    #         if all(dep in completed for dep in step["depends_on"]):
+    #             ready.append(step)
+
+    #     return {
+    #         "ready_steps": ready
+    #     }
 
     async def general(self, state: GraphState):
         start = time.perf_counter()
         print("General : ",start)
         # print(f"General Start : {start}")
 
-        step = self._get_step(state,"general")
+        step = state["current_task"]
         messages = self._build_agent_messages(state,step)
-        response = await self.app.general_agent.ainvoke(messages)
+        try:
+            response = await self.app.general_agent.ainvoke(messages)
+
+        except Exception as e:
+            print(e)
+        # print(response.content)
 
 
         return {
             "results":{
                 "general": response.content
             },
+            "completed_steps": [step["id"]],
         }
     
     async def coding(self, state: GraphState):
         # start = time.perf_counter()
         start = time.perf_counter()
         print("Coding : ",start)
-        step = self._get_step(state,"coding")
+        step = state["current_task"]
         messages = self._build_agent_messages(state,step)
         response = await self.app.coding_agent.ainvoke(messages)
 
@@ -88,6 +112,7 @@ class GraphNodes:
             "results": {
                 "coding":response.content
             },
+            "completed_steps": [step["id"]],
         }
 
     async def research(self, state: GraphState):
@@ -95,21 +120,20 @@ class GraphNodes:
         start = time.perf_counter()
         print("Research : ",start)
 
-        step = self._get_step(state,"research")
+        step = state["current_task"]
         messages = self._build_agent_messages(state,step)
         try:
             response = await self.app.research_agent.ainvoke(messages)
         except Exception as e:
             print(e)
             raise
-        results = dict(state["results"])
-        results["research"] = response.content
 
         return {
             # "messages": [response],
             "results": {
                 "research":response.content
             },
+            "completed_steps": [step["id"]],
             # "current_step": state["current_step"] + 1
         }
     
@@ -118,7 +142,7 @@ class GraphNodes:
         # print("Executing Knowledge Agent...")
         start = time.perf_counter()
         print("Knowledge : ",start)
-        step = self._get_step(state,"knowledge")
+        step = state["current_task"]
         messages = self._build_agent_messages(state,step)
 
         response = await self.app.knowledge_agent.ainvoke(messages)
@@ -131,6 +155,7 @@ class GraphNodes:
             "results": {
                 "knowledge":response.content
             },
+            "completed_steps": [step["id"]],
         }
         
 
@@ -186,7 +211,7 @@ class GraphNodes:
     """
         
 
-        response = await self.app.llm.ainvoke(
+        response = await self.app.final_llm.ainvoke(
             [
                 HumanMessage(content=prompt)
             ]
@@ -244,6 +269,6 @@ IMPORTANT:
 """
         history = state["messages"][-Settings.MAX_HISTORY:]
         return [
-            HumanMessage(content=prompt),
+            SystemMessage(content=prompt),
             *history
         ]

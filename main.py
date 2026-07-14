@@ -69,7 +69,7 @@ async def main():
             {
                 "messages": langchain_messages
             },
-            config=config,
+            # config=config,
             stream_mode="messages",
         ):
 

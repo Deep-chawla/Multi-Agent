@@ -45,7 +45,6 @@ class BaseAgent(ABC):
     async def ainvoke(self, messages: list[BaseMessage]):
         final_messages = self._build_messages(messages)
 
-
         response = await self.model.ainvoke(final_messages)
 
         if not self.tools or not response.tool_calls:
