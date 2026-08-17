@@ -11,7 +11,7 @@ class Settings:
     GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
     # MODEL_NAME = "llama-3.3-70b-versatile"
     MODEL_NAME = "openai/gpt-oss-120b"
-    SUPERVISOR_MODEL="llama-3.3-70b-versatile"
+    SUPERVISOR_MODEL="openai/gpt-oss-120b"
     TEMPERATURE = 0.7
     # MAX_TOKENS = 5000  # from 1024 to 512 to reduce token
     # config/settings.py

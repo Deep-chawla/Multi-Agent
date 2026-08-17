@@ -25,11 +25,13 @@ class GroqProvider:
         )
 
         self.structured_client = instructor.from_groq(
-            groq_client
+            groq_client,
+            mode=instructor.Mode.JSON,
         )
 
         self.structured_client1 = instructor.from_groq(
-            groq_client1
+            groq_client1,
+            mode=instructor.Mode.JSON,
         )
 
 

@@ -19,8 +19,8 @@ from app.conversation.service.conversation_service import ConversationService
 class Application:
 
     def __init__(self):
-        self.title_llm = GroqProvider("llama-3.3-70b-versatile")
-        self.general_llm = GroqProvider("llama-3.3-70b-versatile")
+        self.title_llm = GroqProvider("openai/gpt-oss-120b")
+        self.general_llm = GroqProvider("openai/gpt-oss-120b")
         self.coding_llm = GroqProvider("openai/gpt-oss-120b")
         self.research_llm = GroqProvider("openai/gpt-oss-120b")
         self.knowledge_llm = GroqProvider("llama-3.1-8b-instant")

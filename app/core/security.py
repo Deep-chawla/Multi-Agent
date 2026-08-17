@@ -23,6 +23,7 @@ security = HTTPBearer()
 @dataclass
 class CurrentUser:
     id: str
+    name:str | None = None
 
 
 def verify_access_token(token: str) -> dict | None:
@@ -61,4 +62,4 @@ def get_current_user(
             detail="Invalid token",
         )
 
-    return CurrentUser(id=str(user_id))
+    return CurrentUser(id=str(user_id),name=payload.get("name"),)

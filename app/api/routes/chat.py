@@ -9,7 +9,7 @@ from app.core.security import CurrentUser, get_current_user
 
 router = APIRouter(prefix="/chat",tags=["Chat"],)
 
-@router.post("/{conversation_id}/messages",status_code=status.HTTP_200_OK)
+@router.post("/{conversation_id}/messages", status_code=status.HTTP_200_OK)
 async def send_message(
     conversation_id: str,
     body: SendMessageRequest,
@@ -17,19 +17,16 @@ async def send_message(
     current_user: CurrentUser = Depends(get_current_user),
 ):
     application = request.app.state.application
-
     service = ChatService(application)
     conService = ConversationAPIService(application)
 
-    conService.require_conversation(
-        conversation_id,
-        current_user.id,
-    )
-    print(body.message)
+    conService.require_conversation(conversation_id, current_user.id)
+
     return StreamingResponse(
-    service.stream_message(
-        conversation_id=conversation_id,
-        message=body.message,
-    ),
-    media_type="text/event-stream",
-)
+        service.stream_message(
+            conversation_id=conversation_id,
+            message=body.message,
+            user=current_user,          # <-- pass it through
+        ),
+        media_type="text/event-stream",
+    )

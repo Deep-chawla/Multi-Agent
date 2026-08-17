@@ -4,6 +4,7 @@ from app.api.exceptions.globalException import ConversationNotFoundException
 from app.config.settings import logger
 import asyncio
 import json
+from app.core.security import CurrentUser
 
 
 class ChatService:
@@ -11,35 +12,36 @@ class ChatService:
     def __init__(self, application):
         self.app = application
 
-    async def stream_message(self,conversation_id: str,message: str,):
+    async def stream_message(self, conversation_id: str, message: str, user: CurrentUser):
         conversation_service = self.app.conversation_service
         conversation = conversation_service.get_conversation(conversation_id)
 
-        # Save user message
-        conversation_service.add_user_message(conversation_id=conversation.id,content=message,)
-    
-        # Load history
+        conversation_service.add_user_message(conversation_id=conversation.id, content=message)
+
         history = conversation_service.get_history(conversation.id)
         is_new_conversation = len(history) == 1
 
         title_task = None
-
         if is_new_conversation:
             title_task = asyncio.create_task(
                 self.app.conversation_title_agent.generate_title(message)
             )
-        # Convert to LangChain messages
+
         langchain_messages = LangChainMessageAdapter.to_langchain(history)
+
+        # Inject identity as a SystemMessage at the front of the message list
+        from langchain_core.messages import SystemMessage
+        identity_message = SystemMessage(
+            content=f"The current logged-in user's name is {user.name}. "
+                    f"Their user id is {user.id}. Use this if they ask about themselves."
+        )
+        langchain_messages = [identity_message] + langchain_messages
+
         logger.info(langchain_messages)
-        
 
         final_response = ""
-
-        # Stream LangGraph response
         async for chunk, metadata in self.app.workflow.graph.astream(
-            {
-                "messages": langchain_messages
-            },
+            {"messages": langchain_messages},
             stream_mode="messages",
         ):
 

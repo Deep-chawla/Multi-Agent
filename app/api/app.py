@@ -21,6 +21,7 @@ app.add_middleware(
         "http://127.0.0.1:5174",
         "https://police-espresso-buffer.ngrok-free.dev",
         "https://rearview-bobbing-obscure.ngrok-free.dev",
+        "https://sporting-zombie-kennel.ngrok-free.dev",
     ],
     allow_credentials=True,
     allow_methods=["*"],
