@@ -68,3 +68,18 @@ class ConversationAPIService:
             raise ConversationNotFoundException(conversation_id)
 
         return conversation
+
+
+    def delete_conversation(self,conversation_id: str,user_id: str | None = None,):
+        self._get_owned_conversation(
+            conversation_id,
+            user_id,
+        )
+
+        self.app.conversation_service.delete_conversation(
+            conversation_id
+        )
+
+        return {
+            "message": "Conversation deleted successfully."
+        }

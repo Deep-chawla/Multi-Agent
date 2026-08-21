@@ -39,3 +39,20 @@ async def get_messages(
     application = request.app.state.application
     service = ConversationAPIService(application)
     return service.get_messages(conversation_id, current_user.id)
+
+
+
+@router.delete("/{conversation_id}",status_code=status.HTTP_200_OK,)
+async def delete_conversation(
+    conversation_id: str,
+    request: Request,
+    current_user: CurrentUser = Depends(get_current_user),
+):
+    application = request.app.state.application
+
+    service = ConversationAPIService(application)
+
+    return service.delete_conversation(
+        conversation_id,
+        current_user.id,
+    )
